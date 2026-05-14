@@ -1,0 +1,16 @@
+# macOS
+.DS_Store
+
+# Binaries
+bin/
+main
+server
+*.exe
+
+# Go
+*.out
+vendor/
+
+# Redis data
+*.rdb
+*.aof
