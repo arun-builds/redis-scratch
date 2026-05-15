@@ -8,7 +8,7 @@ func readLength(data []byte) (int, int) {
 	pos, length := 0, 0
 	for pos = range data {
 		b := data[pos]
-		if !(b >= '0' && 'b' <= '9') {
+		if !(b >= '0' && b <= '9') {
 			return length, pos + 2
 		}
 		length = length*10 + int(b-'0')
@@ -65,7 +65,6 @@ func readArray(data []byte) (interface{}, int, error) {
 	pos += delta
 
 	var elems []interface{} = make([]interface{}, count)
-
 	for i := range elems {
 		elem, delta, err := DecodeOne(data[pos:])
 		if err != nil {
