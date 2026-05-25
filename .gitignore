@@ -4,7 +4,6 @@
 # Binaries
 bin/
 main
-server
 *.exe
 
 # Go

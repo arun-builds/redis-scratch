@@ -5,8 +5,10 @@ import (
 	"fmt"
 )
 
-// reads length typically first integer of the string until hit by non-digit byte and returns
-// the integer and delta = length + 2 (\r\n)
+// reads the length typically the first integer of the string
+// until hit by an non-digit byte and returns
+// the integer and the delta = length + 2 (CRLF)
+// TODO: Make it simpler and read until we get `\r` just like other functions
 func readLength(data []byte) (int, int) {
 	pos, length := 0, 0
 	for pos = range data {
@@ -19,22 +21,26 @@ func readLength(data []byte) (int, int) {
 	return 0, 0
 }
 
-// reads RESP encoded simple string from data and returns -> string, delta, error
+// reads a RESP encoded simple string from data and returns
+// the string, the delta, and the error
 func readSimpleString(data []byte) (string, int, error) {
 	// first character +
 	pos := 1
 
 	for ; data[pos] != '\r'; pos++ {
 	}
+
 	return string(data[1:pos]), pos + 2, nil
 }
 
-// reads RESP encoded errorfrom data and returns -> error string, delta, error
+// reads a RESP encoded error from data and returns
+// the error string, the delta, and the error
 func readError(data []byte) (string, int, error) {
 	return readSimpleString(data)
 }
 
-// reads RESP encoded integerfrom data and returns -> integer value, delta, error
+// reads a RESP encoded integer from data and returns
+// the intger value, the delta, and the error
 func readInt64(data []byte) (int64, int, error) {
 	// first character :
 	pos := 1
@@ -43,22 +49,27 @@ func readInt64(data []byte) (int64, int, error) {
 	for ; data[pos] != '\r'; pos++ {
 		value = value*10 + int64(data[pos]-'0')
 	}
+
 	return value, pos + 2, nil
 }
 
-// reads RESP encoded  string from data and returns -> string, delta, error
+// reads a RESP encoded string from data and returns
+// the string, the delta, and the error
 func readBulkString(data []byte) (string, int, error) {
 	// first character $
 	pos := 1
 
-	// reading length and forwarding pos by length of integer + first special character
+	// reading the length and forwarding the pos by
+	// the lenth of the integer + the first special character
 	len, delta := readLength(data[pos:])
 	pos += delta
 
+	// reading `len` bytes as string
 	return string(data[pos:(pos + len)]), pos + len + 2, nil
 }
 
-// reads RESP encoded  array from data and returns -> array, delta, error
+// reads a RESP encoded array from data and returns
+// the array, the delta, and the error
 func readArray(data []byte) (interface{}, int, error) {
 	// first character *
 	pos := 1
@@ -92,47 +103,40 @@ func DecodeOne(data []byte) (interface{}, int, error) {
 		return readInt64(data)
 	case '$':
 		return readBulkString(data)
-
 	case '*':
 		return readArray(data)
 	}
 	return nil, 0, nil
 }
 
-// array of interfaces -> array of strings
-func DecodeArrayString(data []byte) ([]string, error) {
-	value, err := Decode(data)
-	if err != nil {
-		return nil, err
-	}
-
-	ts := value.([]interface{})
-	tokens := make([]string, len(ts))
-	for i := range tokens {
-		tokens[i] = ts[i].(string)
-	}
-
-	return tokens, nil
-}
-
-func Decode(data []byte) (interface{}, error) {
+func Decode(data []byte) ([]interface{}, error) {
 	if len(data) == 0 {
 		return nil, errors.New("no data")
 	}
-
-	value, _, err := DecodeOne(data)
-	return value, err
+	var values []interface{} = make([]interface{}, 0)
+	var index int = 0
+	for index < len(data) {
+		value, delta, err := DecodeOne(data[index:])
+		if err != nil {
+			return values, err
+		}
+		index = index + delta
+		values = append(values, value)
+	}
+	return values, nil
 }
 
-func Encode(value interface{}, isSImple bool) []byte {
+func Encode(value interface{}, isSimple bool) []byte {
 	switch v := value.(type) {
 	case string:
-		if isSImple {
+		if isSimple {
 			return []byte(fmt.Sprintf("+%s\r\n", v))
 		}
 		return []byte(fmt.Sprintf("$%d\r\n%s\r\n", len(v), v))
 	case int, int8, int16, int32, int64:
 		return []byte(fmt.Sprintf(":%d\r\n", v))
+	case error:
+		return []byte(fmt.Sprintf("-%s\r\n", v))
 	default:
 		return RESP_NIL
 	}
