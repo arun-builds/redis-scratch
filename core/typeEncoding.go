@@ -1,0 +1,26 @@
+package core
+
+import "errors"
+
+func getType(te uint8) uint8 {
+	return (te >> 4) << 4
+	// other way ->  te & 0b11110000
+}
+
+func getEncoding(te uint8) uint8 {
+	return te & 0b00001111
+}
+
+func assertType(te, t uint8) error {
+	if getType(te) != t {
+		return errors.New("the operation is note permitted on this type")
+	}
+	return nil
+}
+
+func assertEncoding(te, e uint8) error {
+	if getEncoding(te) != e {
+		return errors.New("the operation is note permitted on this encoding")
+	}
+	return nil
+}
