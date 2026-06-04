@@ -4,7 +4,12 @@ package core
 type Obj struct {
 	TypeEncoding uint8
 	Value        interface{}
-	ExpiresAt    int64
+	// Redis allots 24 bits to these bits, but we will use 32 bits because
+	// golang does not support bitfields and we need not make this super-complicated
+	// by merging TypeEncoding + LastAccessedAt in one 32 bit integer.
+	// But nonetheless, we can benchmark and see how that fares.
+	// For now, we continue with 32 bit integer to store the LastAccessedAt
+	LastAccessedAt uint32
 }
 
 // as go doesnt as bitfields(e.g. allocating int 4 bits)
