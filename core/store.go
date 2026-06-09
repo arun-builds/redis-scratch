@@ -14,23 +14,20 @@ func init() {
 	expires = make(map[*Obj]uint64)
 }
 
-func setExpiry(obj *Obj, expDurationsMs int64) {
-	expires[obj] = uint64(time.Now().UnixMilli()) + uint64(expDurationsMs)
+func setExpiry(obj *Obj, expDurationMs int64) {
+	expires[obj] = uint64(time.Now().UnixMilli()) + uint64(expDurationMs)
 }
 
-func NewObj(value interface{}, expDurationMs int64, oType, oEnc uint8) *Obj {
-
+func NewObj(value interface{}, expDurationMs int64, oType uint8, oEnc uint8) *Obj {
 	obj := &Obj{
 		Value:          value,
 		TypeEncoding:   oType | oEnc,
 		LastAccessedAt: getCurrentClock(),
 	}
-
 	if expDurationMs > 0 {
 		setExpiry(obj, expDurationMs)
 	}
 	return obj
-
 }
 
 func Put(k string, obj *Obj) {
@@ -52,8 +49,8 @@ func Get(k string) *Obj {
 			Del(k)
 			return nil
 		}
+		v.LastAccessedAt = getCurrentClock()
 	}
-	v.LastAccessedAt = getCurrentClock()
 	return v
 }
 
